@@ -5,12 +5,25 @@ fn main() {
     let input = fs::read_to_string("./examples/the_real_dune.srt").unwrap();
     let lines: Vec<&str> = input.split("\n").collect();
 
+    let mut subtitles = get_subtitles(lines);
+
+    let more_seconds: u64 = 2;
+
+    for sub in &mut subtitles {
+        sub.start.add_seconds(more_seconds);
+        sub.end.add_seconds(more_seconds);
+    }
+
+    print_subtitles(subtitles);
+}
+
+fn get_subtitles(lines: Vec<&str>) -> Vec<Subtitle> {
     let mut subtitles: Vec<Subtitle> = Vec::new();
 
     let mut num: i32 = 0;
 
     let mut start_in_seconds: u64 = 0;
-    let mut start_hundredths: u16 = 0;
+    let mut start_ms: u16 = 0;
 
     let mut end_in_seconds: u64 = 0;
     let mut end_ms: u16 = 0;
@@ -25,14 +38,14 @@ fn main() {
 
             subtitles.push(Subtitle {
                 number: num,
-                start: TimeCode::new(start_in_seconds, start_hundredths),
+                start: TimeCode::new(start_in_seconds, start_ms),
                 end: TimeCode::new(end_in_seconds, end_ms),
                 text,
             });
 
             num = 0;
             start_in_seconds = 0;
-            start_hundredths = 0;
+            start_ms = 0;
             end_in_seconds = 0;
             end_ms = 0;
             text = String::from("");
@@ -44,48 +57,18 @@ fn main() {
             continue;
         }
 
-        if is_timecodes(line) {
+        if are_timecodes(line) {
             let timecodes: Vec<&str> = line.split(" --> ").collect();
 
             let start = timecodes[0];
+            let (hh, mm, ss, ms) = get_hh_mm_ss_ms_from_timecode(start);
+            start_in_seconds = hours_to_seconds(hh) + minutes_to_seconds(mm) + ss;
+            start_ms = ms;
+
             let end = timecodes[1];
-
-            let values: Vec<&str> = start.split(":").collect();
-
-            let hour = values[0];
-            let hour: u64 = hour.trim().parse().unwrap();
-
-            let minute = values[1];
-            let minute: u64 = minute.trim().parse().unwrap();
-
-            let second_hundredths: Vec<&str> = values[2].split(",").collect();
-
-            let second = second_hundredths[0];
-            let second: u64 = second.trim().parse().unwrap();
-            let hundredths = second_hundredths[1];
-
-            start_in_seconds = hours_to_seconds(hour) + minutes_to_seconds(minute) + second;
-            start_hundredths = hundredths.trim().parse().unwrap();
-
-            // -----------------------------
-
-            let values: Vec<&str> = end.split(":").collect();
-
-            let hh = values[0];
-            let hh: u64 = hh.trim().parse().unwrap();
-
-            let mm = values[1];
-            let mm: u64 = mm.trim().parse().unwrap();
-
-            let ss_ms: Vec<&str> = values[2].split(",").collect();
-
-            let ss = ss_ms[0];
-            let ss: u64 = ss.trim().parse().unwrap();
-
-            let ms = ss_ms[1];
-
+            let (hh, mm, ss, ms) = get_hh_mm_ss_ms_from_timecode(end);
             end_in_seconds = hours_to_seconds(hh) + minutes_to_seconds(mm) + ss;
-            end_ms = ms.trim().parse().unwrap();
+            end_ms = ms;
 
             continue;
         }
@@ -93,6 +76,10 @@ fn main() {
         text = format!("{text}\n{}", line);
     }
 
+    subtitles
+}
+
+fn print_subtitles(subtitles: Vec<Subtitle>) {
     for subtitle in subtitles {
         println!(
             r#"{}
@@ -121,7 +108,7 @@ fn is_num(line: &str) -> bool {
     false
 }
 
-fn is_timecodes(line: &str) -> bool {
+fn are_timecodes(line: &str) -> bool {
     if !line.is_empty()
         && line.chars().next().unwrap().is_numeric()
         && !line.chars().next().unwrap().is_alphabetic()
@@ -133,6 +120,19 @@ fn is_timecodes(line: &str) -> bool {
     }
 
     false
+}
+
+fn get_hh_mm_ss_ms_from_timecode(timecode: &str) -> (u64, u64, u64, u16) {
+    let values: Vec<&str> = timecode.split(":").collect();
+
+    let hh = values[0].trim().parse().unwrap();
+    let mm = values[1].trim().parse().unwrap();
+
+    let ss_and_ms: Vec<&str> = values[2].split(",").collect();
+    let ss: u64 = ss_and_ms[0].trim().parse().unwrap();
+    let ms: u16 = ss_and_ms[1].trim().parse().unwrap();
+
+    (hh, mm, ss, ms)
 }
 
 fn hours_to_seconds(hours: u64) -> u64 {
