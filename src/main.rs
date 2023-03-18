@@ -2,17 +2,15 @@ use std::fs;
 use std::time;
 
 fn main() {
-    let input = fs::read_to_string("./examples/the_real_dune.srt").unwrap();
+    let input = fs::read_to_string("test2.srt").unwrap();
     let lines: Vec<&str> = input.split("\n").collect();
 
     let mut subtitles = get_subtitles(lines);
 
-    let more_seconds: u64 = 2;
+    // let less_seconds: u64 = 146;
 
-    for sub in &mut subtitles {
-        sub.start.add_seconds(more_seconds);
-        sub.end.add_seconds(more_seconds);
-    }
+    // sub_seconds_subtitles(&mut subtitles, less_seconds);
+    reset_subtitles_numbers(&mut subtitles);
 
     print_subtitles(subtitles);
 }
@@ -94,6 +92,29 @@ fn print_subtitles(subtitles: Vec<Subtitle>) {
     }
 }
 
+fn add_seconds_subtitles(subtitles: &mut Vec<Subtitle>, more_seconds: u64) {
+    for sub in subtitles {
+        sub.start.add_seconds(more_seconds);
+        sub.end.add_seconds(more_seconds);
+    }
+}
+
+fn sub_seconds_subtitles(subtitles: &mut Vec<Subtitle>, less_seconds: u64) {
+    for sub in subtitles {
+        sub.start.sub_seconds(less_seconds);
+        sub.end.sub_seconds(less_seconds);
+    }
+}
+
+fn reset_subtitles_numbers(subtitles: &mut Vec<Subtitle>) {
+    let mut num = 1;
+
+    for sub in subtitles {
+        sub.number = num;
+        num += 1;
+    }
+}
+
 fn is_num(line: &str) -> bool {
     if !line.is_empty()
         && line.chars().next().unwrap().is_numeric()
@@ -169,6 +190,11 @@ impl TimeCode {
     fn add_seconds(&mut self, seconds: u64) {
         let more_duration = time::Duration::new(seconds, 0);
         self.duration = self.duration.checked_add(more_duration).unwrap();
+    }
+
+    fn sub_seconds(&mut self, seconds: u64) {
+        let less_duration = time::Duration::new(seconds, 0);
+        self.duration = self.duration.checked_sub(less_duration).unwrap();
     }
 }
 
