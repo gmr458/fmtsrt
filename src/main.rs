@@ -1,12 +1,12 @@
-use clap::{Parser, Subcommand};
-use fmtsrt::{action, get};
+use clap::Parser;
+use fmtsrt::{action, cli, get};
 use std::{fs, io, path, process};
 
-fn main() -> std::io::Result<()> {
-    let cli = Cli::parse();
+fn main() -> io::Result<()> {
+    let cli = cli::Cli::parse();
 
     let filepath = cli.input_file.as_deref().unwrap_or_else(|| {
-        eprintln!("the path of the .srt file should be provided");
+        eprintln!("Use flag --input-file to provide the path of a SRT file");
         process::exit(1);
     });
 
@@ -29,10 +29,6 @@ fn main() -> std::io::Result<()> {
                 eprintln!("Insufficient permissions to read the file");
                 process::exit(1);
             }
-            // io::ErrorKind::IsADirectory => {
-            //     eprintln!("You passed a directory, make sure it is a text file");
-            //     process::exit(1);
-            // }
             _ => {
                 eprintln!("Unexpected error, make sure you're passing a text file");
                 process::exit(1);
@@ -51,9 +47,11 @@ fn main() -> std::io::Result<()> {
     let reset_numbers = cli.reset_numbers;
 
     match cli.command {
-        Some(Commands::Add { seconds }) => match seconds {
+        Some(cli::Commands::Add { seconds }) => match seconds {
             Some(seconds) => {
                 action::add_secs(&mut subtitles, seconds);
+                let command = cli.command.unwrap();
+                action::print_change_applied(command, seconds);
 
                 if reset_numbers {
                     action::reset_nums(&mut subtitles);
@@ -64,9 +62,12 @@ fn main() -> std::io::Result<()> {
                 process::exit(1);
             }
         },
-        Some(Commands::Subtract { seconds }) => match seconds {
+        Some(cli::Commands::Subtract { seconds }) => match seconds {
             Some(seconds) => match action::sub_secs(&mut subtitles, seconds) {
                 Ok(()) => {
+                    let command = cli.command.unwrap();
+                    action::print_change_applied(command, seconds);
+
                     if reset_numbers {
                         action::reset_nums(&mut subtitles);
                     }
@@ -100,69 +101,22 @@ fn main() -> std::io::Result<()> {
     let output_file = cli.output_file.as_deref().unwrap_or(filename);
     let output_file = output_dir.join(output_file).with_extension("srt");
 
-    match fs::create_dir_all(output_dir) {
-        Ok(()) => {
-            println!("Directory {} created", output_dir.to_str().unwrap());
-        }
-        Err(error) => match error.kind() {
-            io::ErrorKind::PermissionDenied => {
-                eprintln!("Insufficient permissions to read the file");
-                process::exit(1);
-            }
-            _ => {
-                eprintln!(
-                    "Unexpected error trying to create de output directory: {}",
-                    error
-                );
-                process::exit(1);
-            }
-        },
-    };
-    match fs::write(output_file, contents) {
-        Ok(()) => {
-            println!("Output file .srt write written");
-        }
-        Err(error) => {
-            eprintln!(
-                "Unexpected error trying to create de output directory: {}",
-                error
-            );
+    if let Err(e) = fs::create_dir_all(output_dir) {
+        if e.kind() == io::ErrorKind::PermissionDenied {
+            eprintln!("Insufficient permissions to create output directory");
             process::exit(1);
         }
-    };
+
+        eprintln!("Error trying to create output directory: {}", e);
+        process::exit(1);
+    }
+
+    if let Err(e) = fs::write(&output_file, contents) {
+        eprintln!("Error trying to write output file: {}", e);
+        process::exit(1);
+    }
+
+    println!("Output file {} written", output_file.to_str().unwrap());
 
     Ok(())
-}
-
-#[derive(Parser)]
-#[command(author, version, about = "CLI tool for basic SRT file edit", long_about = None)]
-struct Cli {
-    /// Path of the .srt file
-    #[arg(long)]
-    input_file: Option<String>,
-
-    /// Reset numbers of the .srt file
-    #[arg(long)]
-    reset_numbers: bool,
-
-    /// Commands to add and subtract seconds in .srt file
-    #[command(subcommand)]
-    command: Option<Commands>,
-
-    /// Path of the directory to save the resulting file
-    #[arg(long)]
-    output_dir: Option<String>,
-
-    /// Name of the resulting file without .srt extension
-    #[arg(long)]
-    output_file: Option<String>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Add seconds to the .srt file, should be a positive integer
-    Add { seconds: Option<u64> },
-
-    /// Subtract seconds to the .srt file, should be a positive integer
-    Subtract { seconds: Option<u64> },
 }
