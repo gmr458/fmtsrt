@@ -60,7 +60,7 @@ pub fn subs_from_lines(lines: Vec<&str>) -> Vec<model::Subtitle> {
         next: model::LineKind::Number,
     };
 
-    let mut number_line: usize = 1;
+    let mut number_line: u16 = 1;
 
     for line in lines {
         match tracker.next {
