@@ -74,6 +74,11 @@ pub fn subs_from_lines(lines: Vec<&str>) -> Vec<model::Subtitle> {
                     }
                 }
 
+                // Text files with `UTF-8 with BOM` encoding have the string `<feff>`
+                // at the beginning of its content, it should be removed
+                let line = line.replace("﻿", "");
+                let line = line.as_str();
+
                 if validate::num(line) {
                     number = line.trim().parse().unwrap();
                     tracker.prev = Some(model::LineKind::Number);
