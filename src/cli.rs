@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "fmtsrt")]
-#[command(version = "0.1.2")]
+#[command(version = "0.1.3")]
 #[command(author = "German David <germanmarinrolong@gmail.com>")]
 #[command(about = "CLI tool for basic SRT file edit", long_about = None)]
 pub struct Cli {
