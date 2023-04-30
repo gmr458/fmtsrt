@@ -1,6 +1,9 @@
 use clap::Parser;
-use fmtsrt::{action, cli, get};
-use std::{fs, io, path, process};
+use fmtsrt::{action, cli, get, util};
+use std::{fs, io, io::prelude::*, path, process};
+
+/// Maximum file size allowed to open in byte
+const MAX_SIZE_FILE: u64 = 1_000_000;
 
 fn main() -> io::Result<()> {
     let cli = cli::Cli::parse();
@@ -10,31 +13,46 @@ fn main() -> io::Result<()> {
         process::exit(1);
     });
 
-    let input = match fs::read_to_string(filepath) {
-        Ok(input) => input,
+    let mut file = match fs::File::open(filepath) {
+        Ok(file) => file,
         Err(e) => match e.kind() {
             io::ErrorKind::NotFound => {
-                eprintln!("File not found");
-                process::exit(1);
-            }
-            io::ErrorKind::Interrupted => {
-                eprintln!("The operation of reading the file was interrupted");
-                process::exit(1);
-            }
-            io::ErrorKind::InvalidData => {
-                eprintln!("The file passed is invalid, make sure it is a text file");
+                eprintln!("File {} could not be found", filepath);
                 process::exit(1);
             }
             io::ErrorKind::PermissionDenied => {
-                eprintln!("Insufficient permissions to read the file");
+                eprintln!("Insufficient permissions to open the file {}", filepath);
                 process::exit(1);
             }
             _ => {
-                eprintln!("Unexpected error, make sure you're passing a text file");
+                eprintln!("Could not open the file {}. {:?}", filepath, e);
                 process::exit(1);
             }
         },
     };
+
+    let size = file.metadata().map(|m| m.len()).unwrap_or(0);
+    if size > MAX_SIZE_FILE {
+        eprintln!(
+            "Too large file, exceeds the limit of {}MB",
+            util::bytes_to_megabytes(MAX_SIZE_FILE)
+        );
+        process::exit(1);
+    }
+
+    let mut input = String::with_capacity(size as usize);
+    if let Err(e) = file.read_to_string(&mut input) {
+        match e.kind() {
+            io::ErrorKind::InvalidData => {
+                eprintln!("Could not read the file {}, make sure you are passing a text file with valid UTF-8 content", filepath);
+                process::exit(1);
+            }
+            _ => {
+                eprintln!("Could not read the file {}. {:?}", filepath, e);
+                process::exit(1);
+            }
+        }
+    }
 
     if input.is_empty() {
         eprintln!("The file is empty");
