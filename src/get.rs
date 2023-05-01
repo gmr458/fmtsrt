@@ -51,8 +51,8 @@ pub fn subs_from_lines(lines: Vec<&str>) -> Vec<model::Subtitle> {
     let mut subs: Vec<model::Subtitle> = Vec::new();
 
     let mut number: usize = 0;
-    let mut start = model::TimeCode::new();
-    let mut end = model::TimeCode::new();
+    let mut start = model::TimeCode::default();
+    let mut end = model::TimeCode::default();
     let mut text = String::new();
 
     let mut tracker = model::LineTracker {
@@ -66,17 +66,14 @@ pub fn subs_from_lines(lines: Vec<&str>) -> Vec<model::Subtitle> {
         match tracker.next {
             model::LineKind::Number => {
                 if line.is_empty() {
-                    match tracker.prev {
-                        Some(model::LineKind::Empty) => {
-                            break;
-                        }
-                        _ => {}
+                    if let Some(model::LineKind::Empty) = tracker.prev {
+                        break;
                     }
                 }
 
                 // Text files with `UTF-8 with BOM` encoding have the string `<feff>`
                 // at the beginning of its content, it should be removed
-                let line = line.strip_prefix("﻿").unwrap_or(line);
+                let line = line.strip_prefix('﻿').unwrap_or(line);
 
                 if validate::num(line) {
                     number = line.trim().parse().unwrap();
@@ -124,8 +121,8 @@ pub fn subs_from_lines(lines: Vec<&str>) -> Vec<model::Subtitle> {
                             subs.push(sub);
 
                             number = 0;
-                            start = model::TimeCode::new();
-                            end = model::TimeCode::new();
+                            start = model::TimeCode::default();
+                            end = model::TimeCode::default();
                             text = String::from("");
 
                             tracker.prev = Some(model::LineKind::Empty);
@@ -150,12 +147,12 @@ pub fn subs_from_lines(lines: Vec<&str>) -> Vec<model::Subtitle> {
 
 /// Get hours, minutes, seconds and milliseconds from a string literal with the format hh::mm::ss,xxx
 pub fn hh_mm_ss_ms(timecode: &str) -> (u64, u64, u64, u32) {
-    let values: Vec<&str> = timecode.split(":").collect();
+    let values: Vec<&str> = timecode.split(':').collect();
 
     let hh = values[0].trim().parse().unwrap();
     let mm = values[1].trim().parse().unwrap();
 
-    let ss_and_ms: Vec<&str> = values[2].split(",").collect();
+    let ss_and_ms: Vec<&str> = values[2].split(',').collect();
     let ss: u64 = ss_and_ms[0].trim().parse().unwrap();
     let ms: u32 = ss_and_ms[1].trim().parse().unwrap();
 
@@ -166,7 +163,7 @@ pub fn text_contents_subs(subs: Vec<model::Subtitle>) -> String {
     let mut text = String::new();
 
     for sub in subs {
-        text = format!("{}\n{}", text.trim_start(), sub.to_string());
+        text = format!("{}\n{}", text.trim_start(), sub.to_srt_string());
     }
 
     text = format!("{}\n", text);

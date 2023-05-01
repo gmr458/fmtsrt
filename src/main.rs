@@ -59,7 +59,7 @@ fn main() -> io::Result<()> {
         process::exit(1);
     }
 
-    let lines: Vec<&str> = input.split("\n").collect();
+    let lines: Vec<&str> = input.split('\n').collect();
     let mut subtitles = get::subs_from_lines(lines);
 
     let reset_numbers = cli.reset_numbers;
@@ -115,7 +115,7 @@ fn main() -> io::Result<()> {
     let output_dir = cli.output_dir.as_deref().unwrap_or("output");
     let output_dir = path::Path::new(output_dir);
 
-    let filename = filepath.split("/").last().unwrap();
+    let filename = filepath.split('/').last().unwrap();
     let output_file = cli.output_file.as_deref().unwrap_or(filename);
     let output_file = output_dir.join(output_file).with_extension("srt");
 

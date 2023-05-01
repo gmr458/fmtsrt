@@ -10,15 +10,15 @@ pub struct Subtitle {
 }
 
 impl Subtitle {
-    pub fn to_string(&self) -> String {
+    pub fn to_srt_string(&self) -> String {
         format!(
             r#"{}
 {} --> {}
 {}
 "#,
             self.number,
-            self.start.to_string(),
-            self.end.to_string(),
+            self.start.to_srt_string(),
+            self.end.to_srt_string(),
             self.text.trim_start(),
         )
     }
@@ -33,11 +33,11 @@ pub struct TimeCode {
     pub duration: time::Duration,
 }
 
-impl TimeCode {
-    pub fn new() -> TimeCode {
+impl Default for TimeCode {
+    fn default() -> Self {
         let duration = time::Duration::new(0, 0);
 
-        TimeCode {
+        Self {
             hours: 0,
             mins: 0,
             secs: 0,
@@ -45,14 +45,16 @@ impl TimeCode {
             duration,
         }
     }
+}
 
-    pub fn build(hours: u64, mins: u64, secs: u64, millis: u32) -> TimeCode {
+impl TimeCode {
+    pub fn build(hours: u64, mins: u64, secs: u64, millis: u32) -> Self {
         let duration = time::Duration::new(
             util::hours_to_secs(hours) + util::mins_to_secs(mins) + secs,
             util::millis_to_nanos(millis),
         );
 
-        TimeCode {
+        Self {
             hours,
             mins,
             secs,
@@ -61,7 +63,7 @@ impl TimeCode {
         }
     }
 
-    fn to_string(&self) -> String {
+    fn to_srt_string(&self) -> String {
         format!(
             "{:02}:{:02}:{:02},{:03}",
             self.hours, self.mins, self.secs, self.millis
