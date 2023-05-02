@@ -62,52 +62,23 @@ fn main() -> io::Result<()> {
     let lines: Vec<&str> = input.split('\n').collect();
     let mut subtitles = get::subs_from_lines(lines);
 
-    let reset_numbers = cli.reset_numbers;
-
     match cli.command {
-        Some(cli::Commands::Add { seconds }) => match seconds {
-            Some(seconds) => {
-                action::add_secs(&mut subtitles, seconds);
-                let command = cli.command.unwrap();
-                action::print_change_applied(command, seconds);
-
-                if reset_numbers {
-                    action::reset_nums(&mut subtitles);
-                }
-            }
-            None => {
-                eprintln!("Error: seconds no provided");
-                process::exit(1);
-            }
-        },
-        Some(cli::Commands::Subtract { seconds }) => match seconds {
-            Some(seconds) => match action::sub_secs(&mut subtitles, seconds) {
-                Ok(()) => {
-                    let command = cli.command.unwrap();
-                    action::print_change_applied(command, seconds);
-
-                    if reset_numbers {
-                        action::reset_nums(&mut subtitles);
-                    }
-                }
-                Err(error) => {
-                    eprintln!("Error: {}", error);
-                    process::exit(1);
-                }
-            },
-            None => {
-                eprintln!("Error: seconds no provided");
-                process::exit(1);
-            }
-        },
-        None => {
-            if reset_numbers {
-                action::reset_nums(&mut subtitles);
-            } else {
-                eprintln!("No command or option provided");
-                process::exit(1);
-            }
+        cli::Commands::Add { seconds } => {
+            action::add_secs(&mut subtitles, seconds);
+            action::print_change_applied(cli.command, seconds);
         }
+        cli::Commands::Sub { seconds } => {
+            if let Err(e) = action::sub_secs(&mut subtitles, seconds) {
+                eprintln!("{}", e);
+                process::exit(1);
+            }
+
+            action::print_change_applied(cli.command, seconds);
+        }
+    }
+
+    if cli.reset_numbers {
+        action::reset_nums(&mut subtitles);
     }
 
     let contents = get::text_contents_subs(subtitles);

@@ -27,7 +27,7 @@ pub fn print_change_applied(command: cli::Commands, secs: u64) {
         cli::Commands::Add { .. } => {
             println!("{} {} added", secs, secs_string);
         }
-        cli::Commands::Subtract { .. } => {
+        cli::Commands::Sub { .. } => {
             println!("{} {} subtracted", secs, secs_string);
         }
     }
