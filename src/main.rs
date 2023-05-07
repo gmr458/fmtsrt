@@ -2,7 +2,7 @@ use clap::Parser;
 use fmtsrt::{action, cli, get, util};
 use std::{fs, io, io::prelude::*, path, process};
 
-/// Maximum file size allowed to open in byte
+/// Maximum file size allowed to open in bytes
 const MAX_SIZE_FILE: u64 = 1_000_000;
 
 fn main() -> io::Result<()> {
