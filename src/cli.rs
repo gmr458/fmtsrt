@@ -2,13 +2,13 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "fmtsrt")]
-#[command(version = "1.1.5")]
+#[command(version = "1.2.5")]
 #[command(author = "German David <germanmarinrolong@gmail.com>")]
 #[command(about = "CLI tool for basic SRT file edit", long_about = None)]
 pub struct Cli {
     /// Path of the SRT file to edit
     #[arg()]
-    pub input_file: Option<String>,
+    pub input_file: String,
 
     /// Reset numbers of the SRT file
     #[arg(long)]
@@ -16,7 +16,7 @@ pub struct Cli {
 
     /// Commands to add and subtract seconds in SRT file
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 
     /// Directory to save the resulting file
     #[arg(long)]

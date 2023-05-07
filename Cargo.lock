@@ -80,7 +80,7 @@ dependencies = [
 
 [[package]]
 name = "fmtsrt"
-version = "1.1.5"
+version = "1.2.5"
 dependencies = [
  "clap",
 ]

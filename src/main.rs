@@ -8,12 +8,14 @@ const MAX_SIZE_FILE: u64 = 1_000_000;
 fn main() -> io::Result<()> {
     let cli = cli::Cli::parse();
 
-    let filepath = cli.input_file.as_deref().unwrap_or_else(|| {
-        eprintln!("Use flag --input-file to provide the path of a SRT file");
+    if cli.command.is_none() && !cli.reset_numbers {
+        eprintln!("Use a command or and option.\nSee fmtsrt --help");
         process::exit(1);
-    });
+    }
 
-    let mut file = match fs::File::open(filepath) {
+    let filepath = cli.input_file;
+
+    let mut file = match fs::File::open(&filepath) {
         Ok(file) => file,
         Err(e) => match e.kind() {
             io::ErrorKind::NotFound => {
@@ -62,18 +64,20 @@ fn main() -> io::Result<()> {
     let lines: Vec<&str> = input.split('\n').collect();
     let mut subtitles = get::subs_from_lines(lines);
 
-    match cli.command {
-        cli::Commands::Add { seconds } => {
-            action::add_secs(&mut subtitles, seconds);
-            action::print_change_applied(cli.command, seconds);
-        }
-        cli::Commands::Sub { seconds } => {
-            if let Err(e) = action::sub_secs(&mut subtitles, seconds) {
-                eprintln!("{}", e);
-                process::exit(1);
+    if let Some(command) = cli.command {
+        match command {
+            cli::Commands::Add { seconds } => {
+                action::add_secs(&mut subtitles, seconds);
+                action::print_change_applied(command, seconds);
             }
+            cli::Commands::Sub { seconds } => {
+                if let Err(e) = action::sub_secs(&mut subtitles, seconds) {
+                    eprintln!("{}", e);
+                    process::exit(1);
+                }
 
-            action::print_change_applied(cli.command, seconds);
+                action::print_change_applied(command, seconds);
+            }
         }
     }
 
